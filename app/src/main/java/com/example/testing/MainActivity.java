@@ -21,6 +21,7 @@ public class MainActivity extends AppCompatActivity{
     private LinearLayout mStreamsContainer;
 
     protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate");
 
         this.mOpenNIHelper = new OpenNIHelper(this);
@@ -28,7 +29,7 @@ public class MainActivity extends AppCompatActivity{
         OpenNI.setLogAndroidOutput(true);
         OpenNI.setLogMinSeverity(0);
         OpenNI.initialize();
-        super.onCreate(savedInstanceState);
+
 
         setTitle(getString(R.string.app_name));
         this.mStreamsContainer = (LinearLayout) findViewById(R.id.streams_container);
