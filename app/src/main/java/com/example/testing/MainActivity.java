@@ -9,7 +9,6 @@ import org.openni.Device;
 import org.openni.DeviceInfo;
 import org.openni.OpenNI;
 import org.openni.SensorType;
-import org.openni.VideoFrameRef;
 import org.openni.VideoMode;
 import org.openni.VideoStream;
 import org.openni.android.OpenNIHelper;
@@ -18,6 +17,7 @@ import org.openni.android.OpenNIView;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -28,18 +28,20 @@ public class MainActivity extends AppCompatActivity {
     private VideoStream videoStream;
     private Thread streamThread;
     private boolean startStream = true;
+    private final Object m_sync = new Object();
 
 
 
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d("myTag", "RIP1");
+
         OpenNI.setLogAndroidOutput(true);
         OpenNI.setLogMinSeverity(0);
         OpenNI.initialize();
 
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_simple_viewer);
+        openNIView = (OpenNIView) findViewById(R.id.frameView);
 
         requestDevice();
     }
@@ -57,24 +59,31 @@ public class MainActivity extends AppCompatActivity {
             if(deviceInfos.size()==0){
                 return;
             }
-            Log.d("myTag", "RIP3");
-            for (int i = 0; i<deviceInfos.size(); i++){
-                if(deviceInfos.get(i).getUsbProductId()==usbDevice.getProductId()){
+
+
+
+            for (int i = 0; i < deviceInfos.size(); i ++){
+                if(deviceInfos.get(i).getUsbProductId() == usbDevice.getProductId()){
                     device = Device.open();
-                    break;
                 }
             }
-            Log.d("myTag", "RIP4");
+
             if(device!=null){
                 videoStream = VideoStream.create(device, SensorType.DEPTH);
-                Log.d("myTag", "RIP5");
+
             }
 
-            List<VideoMode> videoModes= videoStream.getSensorInfo().getSupportedVideoModes();
-            System.out.println("RIP" + videoModes);
+
+            List<VideoMode> videoModes = videoStream.getSensorInfo().getSupportedVideoModes();
+
+            for (int i = 0; i<videoModes.size(); i++){
+                System.out.println(videoModes.get(i).getResolutionX() + "x" + videoModes.get(i).getResolutionY());
+            }
+
+
             for(int j = 0; j<videoModes.size(); j++){
                 VideoMode videoMode = videoModes.get(j);
-                if(videoMode.getResolutionX()==640 && videoMode.getResolutionY()==400){
+                if(videoMode.getResolutionX()==640 && videoMode.getResolutionY()==480){
                     videoStream.setVideoMode(videoMode);
                     break;
                 }
@@ -86,18 +95,21 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onDeviceOpenFailed(String s) {
 
+            System.out.println("OnDeviceFailed");
+
             return;
         }
 
 
     };
 
-    private synchronized void startStreamThread(){
+    private void startStreamThread(){
         streamThread = new Thread() {
             @Override
             public void run(){
-                List<VideoStream> streams = new ArrayList();
+                List <VideoStream> streams = new ArrayList<>();
                 streams.add(videoStream);
+
                 videoStream.start();
 
                 while(startStream){
@@ -106,12 +118,14 @@ public class MainActivity extends AppCompatActivity {
                     } catch (TimeoutException e){
                         e.printStackTrace();
                     }
-                    Log.d("myTag", "RIP6");
+                    synchronized (m_sync) {
+                        if(videoStream!=null){
+                            //VideoFrameRef videoFrameRef = videoStream.readFrame();
+                            //ByteBuffer buf = videoFrameRef.getData();
+                            openNIView.update(videoStream);
+                            //videoFrameRef.release();
 
-                    if(videoStream!=null){
-                        VideoFrameRef videoFrameRef = videoStream.readFrame();
-                        openNIView.update(videoFrameRef);
-                        videoFrameRef.release();
+                        }
                     }
 
                 }
@@ -120,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
         streamThread.start();
     }
 
-    VideoStream.NewFrameListener newFrameListener = new VideoStream.NewFrameListener() {
+    /*VideoStream.NewFrameListener newFrameListener = new VideoStream.NewFrameListener() {
         @Override
         public void onFrameReady(VideoStream videoStream) {
             if(videoStream!=null){
@@ -129,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
                 videoFrameRef.release();
             }
         }
-    };
+    };*/
 
     private void stopStream(){
         startStream = false;
@@ -145,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
             videoStream.stop();
         }
 
-        videoStream.removeNewFrameListener(newFrameListener);
+        //videoStream.removeNewFrameListener(newFrameListener);
     }
 
     private void destroyStream(){
