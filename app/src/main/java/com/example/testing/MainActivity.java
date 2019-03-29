@@ -77,13 +77,13 @@ public class MainActivity extends AppCompatActivity {
             List<VideoMode> videoModes = videoStream.getSensorInfo().getSupportedVideoModes();
 
             for (int i = 0; i<videoModes.size(); i++){
-                System.out.println(videoModes.get(i).getResolutionX() + "x" + videoModes.get(i).getResolutionY());
+                Log.i("IGOR", "supported mode: "+videoModes.get(i).getResolutionX() + "x" + videoModes.get(i).getResolutionY());
             }
 
 
             for(int j = 0; j<videoModes.size(); j++){
                 VideoMode videoMode = videoModes.get(j);
-                if(videoMode.getResolutionX()==640 && videoMode.getResolutionY()==480){
+                if(videoMode.getResolutionX()==1208 && videoMode.getResolutionY()==800){
                     videoStream.setVideoMode(videoMode);
                     break;
                 }
